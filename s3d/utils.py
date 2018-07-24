@@ -41,8 +41,13 @@ def obtain_metric_regression(y_true, y_pred):
 
 def visualize_cv(performance_file,
                  split_version,
-                 validation_metric = 'auc_micro',
-                 color_list=None, aspect=2.7, size=2.5):
+                 validation_metric='auc_micro',
+                 color_list=None,
+                 legend_title_size=15,
+                 metric_name=None,
+                 fp_kwargs = {'aspect':2.7, 'size':2.5},
+                 legend_kwargs={'loc': 8}
+                ):
     ''' visualize the increment of r-squared of s3d model, for invidual data splits
 
         Parameters
@@ -57,6 +62,8 @@ def visualize_cv(performance_file,
         aspect, size : float
             aspect and size the the parameters in sns.factorplot() function
             see: https://seaborn.pydata.org/generated/seaborn.factorplot.html
+        fp_kwargs, legend_kwargs : dict
+            args for factorplot and legend options
     '''
 
     df = pd.read_csv(performance_file)
@@ -83,25 +90,38 @@ def visualize_cv(performance_file,
 
 
     fp = sns.factorplot(x='num_features', y='value', data=cv_df, fit_reg=False,
-                        palette=color_list,
-                        aspect=aspect, size=size, row='variable', row_order=['train_r2', validation_metric],
-                        hue='lambda_', kind='point', sharey=False, legend_out=True)
+                        palette=color_list, row='variable',
+                        row_order=['train_r2', validation_metric],
+                        hue='lambda_', kind='point', sharey=False,
+                        legend=False, **fp_kwargs,
+                        #legend_out=True
+                       )
+
     fp.axes[0,0].set_title('Training Performance', fontdict={'size': 14})
     fp.axes[1,0].set_title('Validation Performance', fontdict={'size': 14})
     fp.axes[0,0].set_ylabel('$R^2$\non training', fontdict={'size': 12})
-    fp.axes[1,0].set_ylabel('{}\non heldout'.format(validation_metric), fontdict={'size': 12})
+    if metric_name is None:
+        metric_name = validation_metric
+    fp.axes[1,0].set_ylabel('{}\non heldout'.format(metric_name), fontdict={'size': 12})
 
     fp.axes[1,0].plot([best_x-1], [best_y], 'o', mfc='none', ms=20, mew=2, color='k')
     fp.axes[1,0].axhline(best_y, xmax=(best_x)/10, color='k', lw=2, ls='--')
     fp.axes[1,0].axvline(best_x-1, ymax=0.9, color='k', lw=2, ls='--')
 
-    fp._legend.set_title('$\lambda$ values', prop={'size':14})
+    # https://stackoverflow.com/a/40910102/3346210
+    handles = fp._legend_data.values()
+    labels = fp._legend_data.keys()
+    leg = fp.fig.legend(handles=handles, labels=labels,
+                        **legend_kwargs
+                       )
+    leg.get_title().set_fontsize(legend_title_size)
     fp.fig.subplots_adjust(top=0.9,right=0.8)
+    fp.fig.legend
 
     fp.set_xlabels('Features Selected', fontdict={'size': 12})
     return fp, best_x, best_y, best_lambda_, split_version
 
-def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None):
+def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=1):
     ''' visualize the increment of r-squared of s3d model
         Parameters
         ----------
@@ -132,7 +152,8 @@ def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None):
     for i in range(df.shape[0]):
         ax.axvline(x=left_base, linestyle='--', color='k')
         #df.loc[i].plot(kind='barh', color=color_list[i], ax=ax, left=left_base, label='Step %d'%(i+1))
-        i_bar = ax.barh(y, df.loc[i].values, color=color_list[i], left=left_base, label='Step %d'%(i+1))
+        i_bar = ax.barh(y, df.loc[i].values, color=color_list[i],
+                        left=left_base, label='Step %d'%(i+1), alpha=bar_alpha)
         ## highlihght the highest bar
         #print(df.loc[i].reset_index(drop=True).idxmax())
         i_max = df.loc[i].reset_index(drop=True).idxmax()
@@ -146,7 +167,9 @@ def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None):
     ax.set_yticks(y)
     ax.set_yticklabels(df.columns)
     _ = ax.legend(loc='upper center', fancybox=True, shadow=True,
-                  ncol=df.shape[0], bbox_to_anchor=(0.5, 1.1))
+                  prop={'size': 12},
+                  ncol=df.shape[0],
+                  bbox_to_anchor=(0.5, 1.1))
     return (fig, ax)
 
 def visualize_s3d_model_reader(model_folder, dim, thres):
