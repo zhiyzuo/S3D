@@ -130,3 +130,4 @@ cv/
 models/
 predictions/
 test-folder/
+test-*

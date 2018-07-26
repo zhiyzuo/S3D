@@ -305,6 +305,37 @@ def visualize_s3d_model(dim, splits_at_dim, cmap,
     cb.set_label(cbar_label, **cb_label_kwargs)
     return fig, ax_arr
 
+def visualize_s3d_model_1d(splits_at_dim, masked_arr,
+                           xlab=None, ylab=None,
+                           figsize=(8,6), xscale='log', yscale='log',
+                           vlines_kwargs={'linestyles': ':', 'linewidth': .3, 'color': 'k'},
+                           hlines_kwargs={'linestyles': '-', 'linewidth': 2, 'color': 'gray'},
+                          ):
+    ''' visualize s3d model using the top feature using line chart'''
+    fig, ax = plt.subplots(figsize=figsize)
+    splits = splits_at_dim[0]
+    assert len(splits)-1 == masked_arr.size
+    for i, val_i in enumerate(masked_arr):
+        ax.hlines(y=val_i, xmin=splits[i],
+                  xmax=splits[i+1],
+                  **hlines_kwargs,
+                 )
+        if i == masked_arr.size-1:
+            ymax_val = masked_arr[0]
+        else:
+            ymax_val = masked_arr[i+1]
+        ax.vlines(x=splits[i+1], ymin=val_i,
+                  ymax=ymax_val,
+                  **vlines_kwargs,
+                 )
+    ax.set_xscale(xscale)
+    ax.set_yscale(yscale)
+    if xlab is not None:
+        ax.set_xlabel(xlab)
+    if ylab is not None:
+        ax.set_ylabel(ylab)
+    return fig, ax
+
 def visualize_feature_network_contruct(model_folder, node_label_mapping, color_choice, isolated_option):
     ''' helper function to visualize feature network '''
 
