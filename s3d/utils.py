@@ -210,7 +210,8 @@ def visualize_s3d_model_reader(model_folder, dim, thres):
     for split in splits:
         if split[0] == split[1]: # sinlge point interval
             if split[1] == 0:
-                split[1] = 0.1
+                #split[1] = 0.1
+                pass
             else:
                 split[0] = split[0]-1
 
@@ -245,6 +246,7 @@ def visualize_s3d_model(dim, splits_at_dim, cmap,
                         xlab_x=None, xlab_y=None, norm_func=None,
                         ylab_x=None, ylab_y=None, scale=1,
                         fontsize=15, unit_w=3.3, unit_h=2.4,
+                        xbins_lab_decimal=2, ybins_lab_decimal=2,
                         cb_kwargs={'aspect': 15},
                         cb_label_kwargs={'labelpad': 30, 'rotation': 270}
                         ):
@@ -289,16 +291,39 @@ def visualize_s3d_model(dim, splits_at_dim, cmap,
 
             if dim > 2 and i == nrows-1:
                 xlab_str = '{}'.format(chosen_features[dim-2])
-                xlab_str += '\n$[{}, {})$'.format(splits_at_dim[dim-3][j],
-                                                   splits_at_dim[dim-3][j+1])
+                if j == 0:
+                    start_paranthesis = '['
+                else:
+                    start_paranthesis = '('
+                #xlab_str += '\n${}{}, {}]$'.format(start_paranthesis,
+                #                                   splits_at_dim[dim-3][j],
+                #                                   splits_at_dim[dim-3][j+1])
+                #print(xlab_str)
+                xlab_str += '\n${0}{1:.{2}f}, {3:.{4}f}]$'.format(start_paranthesis,
+                                                                  splits_at_dim[dim-3][j],
+                                                                  xbins_lab_decimal,
+                                                                  splits_at_dim[dim-3][j+1],
+                                                                  xbins_lab_decimal,
+                                                                 )
                 ax.set_xlabel(xlab_str, size=fontsize)
             elif dim == 2:
                 ax.set_xlabel(chosen_features[0], size=fontsize)
 
             if j == 0:
                 if dim == 4:
-                    ylab_str = '$[{}, {})$\n'.format(splits_at_dim[0][nrows-i-1],
-                                                      splits_at_dim[0][nrows-i])
+                    if i == nrows-1:
+                        start_paranthesis = '['
+                    else:
+                        start_paranthesis = '('
+                    ylab_str = '${0}{1:.{2}f}, {3:.{4}f}]$\n'.format(start_paranthesis,
+                                                                     splits_at_dim[0][nrows-i-1],
+                                                                     ybins_lab_decimal,
+                                                                     splits_at_dim[0][nrows-i],
+                                                                     ybins_lab_decimal,
+                                                                    )
+                                                      #round(splits_at_dim[0][nrows-i-1], ybins_lab_decimal),
+                                                      #round(splits_at_dim[0][nrows-i], ybins_lab_decimal))
+                    #print(ylab_str) 
                     ylab_str += '{}'.format(chosen_features[dim-1])
                 else:
                     ylab_str = '{}'.format(chosen_features[dim-1])
