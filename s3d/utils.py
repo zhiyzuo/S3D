@@ -121,7 +121,10 @@ def visualize_cv(performance_file,
     fp.set_xlabels('Features Selected', fontdict={'size': 12})
     return fp, best_x, best_y, best_lambda_, split_version
 
-def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=1):
+def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=1,
+                        selectd_lw=4, selected_ls='-', selected_lc='k',
+                        highlight_other=True,
+                        other_lw=2, other_ls='--', other_lc='k'):
     ''' visualize the increment of r-squared of s3d model
         Parameters
         ----------
@@ -132,12 +135,21 @@ def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=
         color_list : list
             a list of colors to be used for each step;
             length must be the same as the number of steps (aka the number of selected features)
+        bar_alpha : float
+            alpha level of bars (0-1)
+        highlight_other : bool
+            whether or not to highlight features with equal contribution to $R^2$
+        {selected,other}_{lw,ls,lc} : float/str
+            line width/style/color for bar outlines
     '''
     if not model_folder.endswith('/'):
         model_folder += '/'
     df = pd.read_csv(model_folder+'R2improvements.csv')
+    ## read in the selected ones
+    selected_feature_arr = pd.read_csv(model_folder+'levels.csv')['best_feature'].values
     #print(df)
     df = df.T.sort_values(0).T
+    #print(df.T)
     fig, ax = plt.subplots(figsize=figsize)
     left_base = 0
     width = 0.05
@@ -154,13 +166,25 @@ def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=
         #df.loc[i].plot(kind='barh', color=color_list[i], ax=ax, left=left_base, label='Step %d'%(i+1))
         i_bar = ax.barh(y, df.loc[i].values, color=color_list[i],
                         left=left_base, label='Step %d'%(i+1), alpha=bar_alpha)
-        ## highlihght the highest bar
-        #print(df.loc[i].reset_index(drop=True).idxmax())
-        i_max = df.loc[i].reset_index(drop=True).idxmax()
-        #print(i_bar.patch)
-        i_bar.patches[i_max].set_linewidth(3)
-        i_bar.patches[i_max].set_edgecolor('k')
+        ## highlihght the highest bar (the selected one)
+        i_series = df.loc[i]
+        i_max = pd.np.argwhere(i_series.index==selected_feature_arr[i]).item()
+        i_bar.patches[i_max].set_linewidth(selectd_lw)
+        i_bar.patches[i_max].set_edgecolor(selected_lc)
+        i_bar.patches[i_max].set_linestyle(selected_ls)
         left_base += df.loc[i].max()
+        ## there may be multiple ones that match the max value
+        if not highlight_other:
+            continue
+        max_val = i_series.max()
+        i_max_arr = pd.np.argwhere(i_series==max_val).flatten()
+        #print(i_max_arr)
+        for i_m in i_max_arr:
+            if i_m == i_max:
+                continue
+            i_bar.patches[i_m].set_linewidth(other_lw)
+            i_bar.patches[i_m].set_edgecolor(other_lc)
+            i_bar.patches[i_m].set_linestyle(other_ls)
 
     ax.set_xlabel(r'$R^2$')
     ax.yaxis.grid(color='gray', linestyle='dashed')
@@ -171,6 +195,7 @@ def visualize_s3d_steps(model_folder, figsize=(8,7), color_list=None, bar_alpha=
                   ncol=df.shape[0],
                   bbox_to_anchor=(0.5, 1.1))
     return (fig, ax)
+
 
 def visualize_s3d_model_reader(model_folder, dim, thres):
     levels = pd.read_csv(model_folder+'/levels.csv')
